@@ -1,0 +1,2 @@
+[urirun.bindings]
+safety = urirun_connector_safety.core:urirun_bindings
