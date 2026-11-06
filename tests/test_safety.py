@@ -12,7 +12,22 @@ def test_reversibility_from_git_for_code(monkeypatch):
 
 def test_reversibility_from_connector_declaration(monkeypatch):
     # email:// deklaruje move=reversible, delete=irreversible → resolver to CZYTA (nie hardkod)
-    r=core._resolve_reversibility("run-agent","email://... message move do Junk",git=False)
+    # Zapewnij fallback w izolowanym środowisku testowym (gdy pakiet urirun-connector-email nie jest zainstalowany)
+    try:
+        import urirun_connector_email  # noqa: F401
+    except ImportError:
+        monkeypatch.setattr(
+            core,
+            "_declared_inverse",
+            lambda scheme, blob: {
+                "reversible": True,
+                "strategies": [{"technique": "declared", "how": "move-back"}],
+                "route": "email://host/message/command/move",
+            }
+            if scheme == "email" and "move" in blob
+            else None,
+        )
+    r = core._resolve_reversibility("run-agent", "email://... message move do Junk", git=False)
     assert r["reversible"] is True and "deklaracja" in r["source"]
 
 def test_unknown_scheme_is_unknown_not_assumed(monkeypatch):
